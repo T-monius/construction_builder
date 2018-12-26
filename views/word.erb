@@ -1,0 +1,26 @@
+<% word = @word_object.word %>
+<h2><%= word %></h2>
+<form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/translation">
+  <button type="submit">See Translation</button>
+</form>
+
+<% if session[:see_translation] %>
+  <p><%= @word_object.translation %></p>
+<% session.delete(:see_translation) %>
+<% end %>
+
+<% unless @word_object.forms.empty? %>
+  <ul>
+    <% @word_object.forms.each do |grammar_term, form| %>
+    <li>"<%= form %>": <%= grammar_term %> form</li>
+  </ul>
+  <% end %>
+<% end %>
+
+<form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/add_translation">
+  <input type="text" name="new_translation">
+  <button type="submit">Add Translation</button>
+</form>
+<form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/delete">
+  <button type="submit">Delete Word</button>
+</form>

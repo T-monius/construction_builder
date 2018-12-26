@@ -1,0 +1,19 @@
+---
+:id: '001'
+:vocab:
+- !ruby/object:Word
+  word: run
+  type: verb
+  forms:
+    :dictionary: run
+- !ruby/object:Word
+  word: walk
+  type: verb
+  forms:
+    :dictionary: walk
+- !ruby/object:Word
+  word: hamburger
+  type: noun
+  forms:
+    :dictionary: hamburger
+:name: sample
