@@ -4,7 +4,7 @@ require 'sinatra'
 require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
-require 'pry'
+# require 'pry'
 
 class Word
   attr_accessor :word, :type, :forms, :translation
@@ -28,11 +28,36 @@ configure do
 end
 
 def data_path
-  File.expand_path('../data', __FILE__)
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/data", __FILE__)
+  else
+    File.expand_path("../data", __FILE__)
+  end
 end
 
 def vocab_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/data/vocab", __FILE__)
+  else
+    File.expand_path("../data/vocab", __FILE__)
+  end
+end
+
+def main_env_vocab_path
   File.expand_path('../data/vocab', __FILE__)
+end
+
+def main_env_data_path
+  File.expand_path("../data", __FILE__)
+end
+
+def content_from_main_program_file(filename)
+  file = File.join(main_env_data_path, filename)
+  File.read(file)
+end
+
+def main_env_config_path
+  File.expand_path("../config", __FILE__)
 end
 
 def load_vocab_lists
