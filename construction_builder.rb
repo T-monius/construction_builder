@@ -75,6 +75,13 @@ def load_list(id)
   lists.find { |list| list[:id] == id }
 end
 
+def word_from_list(id, word)
+  list = load_list(id)
+  list[:vocab].find do |word_object|
+    word_object.word == word
+  end
+end
+
 def encrypt(password)
   BCrypt::Password.create(password)
 end
@@ -175,10 +182,9 @@ end
 
 # Show the translation of a word
 post '/vocab/:id/:word/translation' do
-  @list = load_list(params[:id])
-  @word_object = @list[:vocab].find do |word_object|
-    word_object.word == params[:word]
-  end
+  id = params[:id]
+  @list = load_list(id)
+  @word_object = word_from_list(id, params[:word])
 
   unless @word_object.translation.empty?
     session[:see_translation] = true
@@ -190,6 +196,9 @@ post '/vocab/:id/:word/translation' do
   end
 end
 
+# *** Probably make a method that takes a block in order to
+#     DRY up this route, the following, and any other like
+#     them                                                 ***
 # Add a new translation for a particular word
 post '/vocab/:id/:word/add_translation' do
   id = params[:id]
@@ -198,14 +207,12 @@ post '/vocab/:id/:word/add_translation' do
   new_translation = params[:new_translation]
   reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if new_translation.empty?
 
-  @list = load_list(params[:id])
-  @word_object = @list[:vocab].find do |word_object|
-    word_object.word == params[:word]
-  end
+  @list = load_list(id)
+  @word_object = word_from_list(id, word)
 
   @word_object.translation = new_translation
 
-  filepath = File.join(vocab_path, "list#{params[:id]}.yml")
+  filepath = File.join(vocab_path, "list#{id}.yml")
   File.open(filepath, 'w') do |f|
     YAML.dump(@list, f)
   end
@@ -213,10 +220,30 @@ post '/vocab/:id/:word/add_translation' do
   redirect "/vocab/#{@list[:id]}/#{@word_object.word}"
 end
 
+# route to delete a word from the list
+post '/vocab/:id/:word/delete' do
+  id = params[:id]
+  word = params[:word]
+  unless signed_in? || session[:user_type] == 'owner'
+    reroute("/vocab/#{id}/#{word}", 'Sign in to do that')
+  end
+  list = load_list(id)
+  idx = list[:vocab].find_index do |word_object|
+    word_object.word == word
+  end
+  list[:vocab].delete_at(idx)
+
+  filepath = File.join(vocab_path, "list#{id}.yml")
+  File.open(filepath, 'w') do |f|
+    YAML.dump(list, f)
+  end
+
+  session[:message] = "The word '#{word}' was deleted."
+  redirect "/vocab/#{list[:id]}"
+end
 
 # route to add a word to the list
 
-# route to delete a word from the list
 
 # route to add a new word form
 

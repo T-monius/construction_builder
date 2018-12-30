@@ -2,12 +2,6 @@
 :id: '001'
 :vocab:
 - !ruby/object:Word
-  word: run
-  type: verb
-  forms:
-    :dictionary: run
-  translation: ''
-- !ruby/object:Word
   word: walk
   type: verb
   forms:
