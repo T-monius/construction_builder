@@ -7,7 +7,8 @@ require 'yaml'
 # require 'pry'
 
 class Word
-  attr_accessor :word, :type, :forms, :translation
+  attr_accessor :word, :type, :forms, :translation,
+                :provisional_translation
 
   def initialize(word, type, forms={}, translation='')
     self.word = word
@@ -74,14 +75,12 @@ def load_list(id)
 end
 
 def signed_in?
-  nil
+  session[:signed_in]
 end
 
-def reroute_if_not_signed_in
-  unless signed_in?
-    session[:message] = 'You must be signed in to do that'
-    redirect back
-  end
+def reroute(url, message)
+  session[:message] = message
+  redirect url
 end
 
 # route to view the index/ available lists
@@ -93,9 +92,12 @@ get '/' do
   erb :index
 end
 
+get '/sign_in' do
+  erb :sign_in
+end
+
 # Display all of the Words in a List
 get '/vocab/:id' do
-  lists = load_vocab_lists
   @list = load_list(params[:id])
 
   erb :vocab_list
@@ -103,7 +105,6 @@ end
 
 # Route to view a particular word
 get '/vocab/:id/:word' do
-  lists = load_vocab_lists
   @list = load_list(params[:id])
 
   @word_object = @list[:vocab].find do |word_object|
@@ -115,13 +116,12 @@ end
 
 # Show the translation of a word
 post '/vocab/:id/:word/translation' do
-  lists = load_vocab_lists
   @list = load_list(params[:id])
   @word_object = @list[:vocab].find do |word_object|
     word_object.word == params[:word]
   end
 
-  if @word_object.translation
+  unless @word_object.translation.empty?
     session[:see_translation] = true
     redirect "/vocab/#{@list[:id]}/#{@word_object.word}"
   else
@@ -133,22 +133,25 @@ end
 
 # Add a new translation for a particular word
 post '/vocab/:id/:word/add_translation' do
-  reroute_if_not_signed_in
+  id = params[:id]
+  word = params[:word]
+  reroute("/vocab/#{id}/#{word}", 'Sign in to do that') unless signed_in?
+  new_translation = params[:new_translation]
+  reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if new_translation.empty?
 
-  lists = load_vocab_lists
   @list = load_list(params[:id])
   @word_object = @list[:vocab].find do |word_object|
     word_object.word == params[:word]
   end
 
-  if @word_object.translation
-    session[:see_translation] = true
-    redirect "/vocab/#{@list[:id]}/#{@word_object.word}"
-  else
-    session[:message] = 'Sorry, there is no translation available'
-    status 422
-    erb :word
+  @word_object.translation = new_translation
+
+  filepath = File.join(vocab_path, "list#{params[:id]}.yml")
+  File.open(filepath, 'w') do |f|
+    YAML.dump(@list, f)
   end
+
+  redirect "/vocab/#{@list[:id]}/#{@word_object.word}"
 end
 
 

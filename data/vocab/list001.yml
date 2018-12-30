@@ -6,14 +6,17 @@
   type: verb
   forms:
     :dictionary: run
+  translation: ''
 - !ruby/object:Word
   word: walk
   type: verb
   forms:
     :dictionary: walk
+  translation: ''
 - !ruby/object:Word
   word: hamburger
   type: noun
   forms:
     :dictionary: hamburger
+  translation: ''
 :name: sample

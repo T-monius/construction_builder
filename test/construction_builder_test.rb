@@ -44,8 +44,8 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_index
-    sample_list = content_from_main_vocab_file('list_001.yml')
-    create_document(vocab_path, 'list_001.yml', sample_list)
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
 
     get '/'
 
@@ -56,8 +56,8 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_individual_vocab_list_page
-    sample_list = content_from_main_vocab_file('list_001.yml')
-    create_document(vocab_path, 'list_001.yml', sample_list)
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
 
     get '/vocab/001'
 
@@ -68,8 +68,8 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_view_individual_word_page
-    sample_list = content_from_main_vocab_file('list_001.yml')
-    create_document(vocab_path, 'list_001.yml', sample_list)
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
 
     get '/vocab/001/run'
 
@@ -79,13 +79,27 @@ class ConstructionBuilderTest < Minitest::Test
     assert_includes last_response.body, 'See Translation'
   end
 
-  def test_showing_word_translation
-    sample_list = content_from_main_vocab_file('list_001.yml')
-    create_document(vocab_path, 'list_001.yml', sample_list)
+  def test_showing_the_translation_of_a_word
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
     
     post '/vocab/001/run/translation'
 
     assert_equal 422, last_response.status
     assert_includes last_response.body, 'Sorry, there is no translation'
+  end
+
+  def test_attempting_to_add_a_translation_signed_out
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    
+    post '/vocab/001/run/add_translation'
+
+    assert_equal 302, last_response.status
+
+    get last_response['Location']
+
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'Sign in to do that'
   end
 end

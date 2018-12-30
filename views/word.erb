@@ -1,7 +1,7 @@
 <% word = @word_object.word %>
 <h2><%= word %></h2>
 <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/translation">
-  <button type="submit">See Translation</button>
+  <button type="submit" name="see_translation">See Translation</button>
 </form>
 
 <% if session[:see_translation] %>
@@ -22,5 +22,5 @@
   <button type="submit">Add Translation</button>
 </form>
 <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/delete">
-  <button type="submit">Delete Word</button>
+  <button type="submit" name='delet_word'>Delete Word</button>
 </form>
