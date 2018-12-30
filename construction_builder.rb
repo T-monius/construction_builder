@@ -4,6 +4,7 @@ require 'sinatra'
 require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
+require 'bcrypt'
 # require 'pry'
 
 class Word
@@ -74,8 +75,40 @@ def load_list(id)
   lists.find { |list| list[:id] == id }
 end
 
+def encrypt(password)
+  BCrypt::Password.create(password)
+end
+
+def valid?(password, encrypted_password)
+  BCrypt::Password.new(encrypted_password) == password
+end
+
 def signed_in?
   session[:signed_in]
+end
+
+def users_hash
+  user_filepath = File.join(data_path, 'users.yml')
+  user_file = File.read(user_filepath)
+  YAML.load(user_file)  
+end
+
+def authentic_credentials?(username, password)
+  users = users_hash
+  usernames = users[:passwords].keys.map(&:to_s)
+  if usernames.include?(username)
+    encrypted_password = users[:passwords][username.to_sym]
+    valid?(password, encrypted_password)
+  else
+    false
+  end
+end
+
+def user_type(username)
+  users = users_hash
+  return 'editor' if users[:editors].include?(username)
+  return 'owner' if users[:owners].include?(username)
+  'unknown'
 end
 
 def reroute(url, message)
@@ -92,8 +125,34 @@ get '/' do
   erb :index
 end
 
+# Render the sign in page
 get '/sign_in' do
   erb :sign_in
+end
+
+# Submit the sign in credentials
+post '/sign_in' do
+  password = params[:password]
+  @username = params[:username]
+
+  if authentic_credentials?(@username, password)
+    session[:message] = "Welcome #{@username}!"
+    session[:signed_in] = true
+    session[:username] = @username
+    session[:user_type] = user_type(@username)
+    redirect '/'
+  else
+    session[:message] = 'Must provide valid credentials.'
+    erb :sign_in
+  end
+end
+
+post '/sign_out' do
+  session.delete(session[:username])
+  session.delete(session[:user_type])
+  session[:signed_in] = false
+  session[:message] = 'You are signed out.'
+  redirect '/'
 end
 
 # Display all of the Words in a List

@@ -1,11 +1,11 @@
 <form action="/sign_in" method="post">
   <div>
     <label for='username'>Username:</label>
-    <input type="submit" name="username"/>
+    <input type="text" name="username" value="<%= @username || '' %>" />
   </div>
   <div>
     <label for='password'>Password:</label>
-    <input type="submit" name="password"/>    
+    <input type="text" name="password"/>    
   </div>
   <button>Sign in</button>
 </form>

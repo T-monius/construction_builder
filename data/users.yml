@@ -1,0 +1,8 @@
+---
+:passwords:
+  :owner: "$2a$10$KbhAkgZhaBEQC/U1u.LIDO.WYzehmB.TBi8yUsHT9X./PiFou7L/u"
+  :editor: "$2a$10$uFnolal04GiYSUhERpW1k.9cfBgOnqQmV.AXE3HlMEtRJb/Qx8WFy"
+:owners:
+- owner
+:editors:
+- editor

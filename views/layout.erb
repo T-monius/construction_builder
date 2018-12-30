@@ -17,6 +17,11 @@
   <%= yield %>
   <% unless signed_in?%>
     <h5><a href="/sign_in">Sign in</a></h5>
+  <% else %>
+    <p>Signed in as <%= session[:username] %></p>
+    <form action='/sign_out' method='post'>
+      <button type='submit'>Sign Out</button>
+    </form>
   <% end %>
 </body>
 </html>
