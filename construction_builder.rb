@@ -5,7 +5,7 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
-# require 'pry'
+require 'pry'
 
 class Word
   attr_accessor :word, :type, :forms, :translation,
@@ -53,7 +53,7 @@ def main_env_data_path
   File.expand_path("../data", __FILE__)
 end
 
-def content_from_main_program_file(filename)
+def content_from_main_data_path(filename)
   file = File.join(main_env_data_path, filename)
   File.read(file)
 end
@@ -71,12 +71,10 @@ def load_vocab_lists
 end
 
 def load_list(id)
-  lists = load_vocab_lists
-  lists.find { |list| list[:id] == id }
+  load_vocab_lists.find { |list| list[:id] == id }
 end
 
-def word_from_list(id, word)
-  list = load_list(id)
+def word_from_list(word, list)
   list[:vocab].find do |word_object|
     word_object.word == word
   end
@@ -123,6 +121,12 @@ def reroute(url, message)
   redirect url
 end
 
+def redirect_unless_owner(url)
+  unless signed_in? || session[:user_type] == 'owner'
+    reroute(url, 'Sign in to do that')
+  end
+end
+
 # route to view the index/ available lists
 get '/' do
   @sample = load_list('001')
@@ -150,13 +154,14 @@ post '/sign_in' do
     redirect '/'
   else
     session[:message] = 'Must provide valid credentials.'
+    status 422
     erb :sign_in
   end
 end
 
 post '/sign_out' do
-  session.delete(session[:username])
-  session.delete(session[:user_type])
+  session.delete(:username)
+  session.delete(:user_type)
   session[:signed_in] = false
   session[:message] = 'You are signed out.'
   redirect '/'
@@ -171,11 +176,10 @@ end
 
 # Route to view a particular word
 get '/vocab/:id/:word' do
+  id = params[:id]
   @list = load_list(params[:id])
 
-  @word_object = @list[:vocab].find do |word_object|
-    word_object.word == params[:word]
-  end
+  @word_object = word_from_list(params[:word], @list)
 
   erb :word
 end
@@ -184,7 +188,7 @@ end
 post '/vocab/:id/:word/translation' do
   id = params[:id]
   @list = load_list(id)
-  @word_object = word_from_list(id, params[:word])
+  @word_object = word_from_list(params[:word], @list)
 
   unless @word_object.translation.empty?
     session[:see_translation] = true
@@ -196,6 +200,36 @@ post '/vocab/:id/:word/translation' do
   end
 end
 
+def modify_list(id)
+  list = load_list(id)
+  yield(list) if block_given?
+
+  filepath = File.join(vocab_path, "list#{id}.yml")
+  File.open(filepath, 'w') do |f|
+    YAML.dump(list, f)
+  end
+end
+
+# route to add a word to the list
+get '/vocab/:id/add_word' do
+  redirect_unless_owner("/vocab/#{id}")
+  id = params[:id]
+
+
+  erb :vocab_list
+end
+
+# post '/vocab/:id/add_word' do
+#   word = params[:word]
+
+#   modify_list(id) do |list|
+    
+#   end
+  
+#   erb :vocab_list
+# end
+
+
 # *** Probably make a method that takes a block in order to
 #     DRY up this route, the following, and any other like
 #     them                                                 ***
@@ -203,12 +237,12 @@ end
 post '/vocab/:id/:word/add_translation' do
   id = params[:id]
   word = params[:word]
-  reroute("/vocab/#{id}/#{word}", 'Sign in to do that') unless signed_in?
+  redirect_unless_owner("/vocab/#{id}/#{word}")
   new_translation = params[:new_translation]
   reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if new_translation.empty?
 
   @list = load_list(id)
-  @word_object = word_from_list(id, word)
+  @word_object = word_from_list(word, @list)
 
   @word_object.translation = new_translation
 
@@ -241,9 +275,6 @@ post '/vocab/:id/:word/delete' do
   session[:message] = "The word '#{word}' was deleted."
   redirect "/vocab/#{list[:id]}"
 end
-
-# route to add a word to the list
-
 
 # route to add a new word form
 
