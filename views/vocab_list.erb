@@ -10,3 +10,6 @@
     <% end %>
 <% end %>
 
+<% if signed_in? %>
+  <p><a href="/vocab/<%= @list[:id] %>/add_word">Add a Word?</a></p>
+<% end %>

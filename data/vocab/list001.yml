@@ -6,11 +6,23 @@
   type: verb
   forms:
     :dictionary: walk
+  translation: ходить
+- !ruby/object:Word
+  word: run
+  type: verb
+  forms:
+    :dictionary: run
   translation: ''
 - !ruby/object:Word
-  word: hamburger
-  type: noun
+  word: write
+  type: verb
   forms:
-    :dictionary: hamburger
+    :dictionary: write
+  translation: ''
+- !ruby/object:Word
+  word: hop
+  type: ''
+  forms:
+    :dictionary: hop
   translation: ''
 :name: sample

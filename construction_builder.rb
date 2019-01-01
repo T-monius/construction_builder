@@ -122,8 +122,8 @@ def reroute(url, message)
 end
 
 def redirect_unless_owner(url)
-  unless signed_in? || session[:user_type] == 'owner'
-    reroute(url, 'Sign in to do that')
+  unless signed_in? && session[:user_type] == 'owner'
+    reroute(url, 'Sign in as owner to do that')
   end
 end
 
@@ -176,6 +176,7 @@ end
 
 # Route to view a particular word
 get '/vocab/:id/:word' do
+  pass if params[:word] == 'add_word'
   id = params[:id]
   @list = load_list(params[:id])
 
@@ -200,34 +201,45 @@ post '/vocab/:id/:word/translation' do
   end
 end
 
-def modify_list(id)
-  list = load_list(id)
+def modify_list(list)
   yield(list) if block_given?
 
-  filepath = File.join(vocab_path, "list#{id}.yml")
+  filepath = File.join(vocab_path, "list#{list[:id]}.yml")
   File.open(filepath, 'w') do |f|
     YAML.dump(list, f)
   end
 end
 
-# route to add a word to the list
-get '/vocab/:id/add_word' do
-  redirect_unless_owner("/vocab/#{id}")
-  id = params[:id]
-
-
-  erb :vocab_list
+def unique_word?(list, word)
+  list[:vocab].any? { |word_object| word_object.word == word }
 end
 
-# post '/vocab/:id/add_word' do
-#   word = params[:word]
+# route to add a word to the list
+get '/vocab/:id/add_word' do
+  @id = params[:id]
+  redirect_unless_owner("/vocab/#{@id}")
 
-#   modify_list(id) do |list|
-    
-#   end
+  erb :new_word
+end
+
+post '/vocab/:id/add_word' do
+  id = params[:id]
+  redirect_unless_owner("/vocab/#{id}")
+  word = params[:word]
+  @list = load_list(id)
+  unless unique_word?(@list, word)
+    session[:message]= 'Sorry, that word is already in the list'
+    status 422
+    erb :vocab_list
+  end
+  word_object = Word.new(word, params[:word_type])
+
+  modify_list(@list) do |list|
+    list[:vocab] << word_object
+  end
   
-#   erb :vocab_list
-# end
+  erb :vocab_list
+end
 
 
 # *** Probably make a method that takes a block in order to
@@ -258,9 +270,8 @@ end
 post '/vocab/:id/:word/delete' do
   id = params[:id]
   word = params[:word]
-  unless signed_in? || session[:user_type] == 'owner'
-    reroute("/vocab/#{id}/#{word}", 'Sign in to do that')
-  end
+  redirect_unless_owner("/vocab/#{id}/#{word}")
+
   list = load_list(id)
   idx = list[:vocab].find_index do |word_object|
     word_object.word == word
