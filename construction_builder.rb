@@ -5,22 +5,40 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
-require 'pry'
+# require 'pry'
+
+APPROVED_MARKERS = [:first_person, :second_person, :third_person,
+           :plural, :singular, :neuter, :masculine,
+           :feminine, :genetive, :imperative, :dative,
+           :instrumenal, :accusative, :nominative, :prepositional,
+           :vocative, :dictionary, :formal, :informal]
 
 class Word
   attr_accessor :word, :type, :forms, :translation,
                 :provisional_translation
 
-  def initialize(word, type, forms={}, translation='')
+  def initialize(word, type,translation='')
     self.word = word
     self.type = type
-    self.forms = forms
+    self.forms = []
     self.translation = translation
-    dictionary_form
+  end
+end
+
+class Form
+  attr_accessor :form, :markers
+
+  def initialize(form, markers=[])
+    self.form = form
+    if markers.all? { |marker| APPROVED_MARKERS.include?(marker) }
+      self.markers = markers
+    else
+      self.markers = []
+    end
   end
 
-  def dictionary_form
-    forms[:dictionary] = word
+  def add_marker(marker)
+    self.markers << marker if APPROVED_MARKERS.include?(marker)
   end
 end
 
@@ -127,11 +145,25 @@ def redirect_unless_owner(url)
   end
 end
 
+def modify_list(list)
+  yield(list) if block_given?
+
+  filepath = File.join(vocab_path, "list#{list[:id]}.yml")
+  File.open(filepath, 'w') do |f|
+    YAML.dump(list, f)
+  end
+end
+
+def unique_word?(list, word)
+  list[:vocab].any? { |word_object| word_object.word == word }
+end
+
 # route to view the index/ available lists
 get '/' do
   @sample = load_list('001')
-  @sample_word = @sample[:vocab][0].word
-  @sample_word1 = @sample[:vocab][1].word
+  list = @sample[:vocab]
+  @word, @word1 = @sample[:vocab][0..1].map(&:word) unless list.empty?
+  @word, @word1 = ['..', '..'] if list.empty?
 
   erb :index
 end
@@ -201,19 +233,6 @@ post '/vocab/:id/:word/translation' do
   end
 end
 
-def modify_list(list)
-  yield(list) if block_given?
-
-  filepath = File.join(vocab_path, "list#{list[:id]}.yml")
-  File.open(filepath, 'w') do |f|
-    YAML.dump(list, f)
-  end
-end
-
-def unique_word?(list, word)
-  list[:vocab].any? { |word_object| word_object.word == word }
-end
-
 # route to add a word to the list
 get '/vocab/:id/add_word' do
   @id = params[:id]
@@ -273,21 +292,47 @@ post '/vocab/:id/:word/delete' do
   redirect_unless_owner("/vocab/#{id}/#{word}")
 
   list = load_list(id)
-  idx = list[:vocab].find_index do |word_object|
-    word_object.word == word
-  end
-  list[:vocab].delete_at(idx)
-
-  filepath = File.join(vocab_path, "list#{id}.yml")
-  File.open(filepath, 'w') do |f|
-    YAML.dump(list, f)
+  modify_list(list) do |list|
+    word_object = list[:vocab].find do |word_object|
+      word_object.word == word
+    end
+    list[:vocab].delete(word_object)
   end
 
   session[:message] = "The word '#{word}' was deleted."
-  redirect "/vocab/#{list[:id]}"
+  redirect "/vocab/#{id}"
+end
+
+# Render the form for adding a new form of a word
+get '/vocab/:id/:word/add_word_form' do
+  @id = params[:id]
+  @word = params[:word]
+
+  erb :add_word_form
 end
 
 # route to add a new word form
+post '/vocab/:id/:word/add_word_form' do
+  id = params[:id]
+  word = params[:word]
+  redirect_unless_owner("/vocab/#{id}/#{word}")
+
+  markers = params[:markers].scan(/[\w_]+/).map(&:to_sym).select do |marker|
+      APPROVED_MARKERS.include?(marker)
+    end
+  form = Form.new(params[:word_form], markers)
+
+  list = load_list(id)
+  modify_list(list) do |list|
+    word_object = list[:vocab].find do |word_object|
+      word_object.word == word
+    end
+    word_object.forms << form
+  end
+
+  session[:message] = 'New word form has been added'
+  redirect "/vocab/#{id}/#{word}"
+end
 
 # route to delete a word form
 

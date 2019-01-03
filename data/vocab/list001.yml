@@ -2,27 +2,36 @@
 :id: '001'
 :vocab:
 - !ruby/object:Word
+  word: write
+  type: verb
+  forms: []
+  translation: ''
+- !ruby/object:Word
+  word: hamburger
+  type: noun
+  forms: []
+  translation: ''
+- !ruby/object:Word
   word: walk
   type: verb
-  forms:
-    :dictionary: walk
-  translation: ходить
+  forms: []
+  translation: ''
 - !ruby/object:Word
   word: run
   type: verb
   forms:
-    :dictionary: run
-  translation: ''
-- !ruby/object:Word
-  word: write
-  type: verb
-  forms:
-    :dictionary: write
-  translation: ''
-- !ruby/object:Word
-  word: hop
-  type: ''
-  forms:
-    :dictionary: hop
+  - !ruby/object:Form
+    form: runs
+    markers:
+    - :third_person
+    - :singular
+  - !ruby/object:Form
+    form: ran
+    markers:
+    - :first_person
+    - :second_person
+    - :third_person
+    - :singular
+    - :plural
   translation: ''
 :name: sample

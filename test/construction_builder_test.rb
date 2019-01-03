@@ -54,7 +54,7 @@ class ConstructionBuilderTest < Minitest::Test
     word_object = Word.new('happy', 'adj')
     assert_equal('happy', word_object.word)
     assert_equal('adj', word_object.type)
-    assert_equal({dictionary: 'happy'}, word_object.forms)
+    assert_equal([], word_object.forms)
     assert_equal('', word_object.translation)
   end
 
@@ -79,7 +79,7 @@ class ConstructionBuilderTest < Minitest::Test
     assert_equal 200, last_response.status
     assert_equal 'text/html;charset=utf-8', last_response["Content-Type"]
     assert_includes last_response.body, 'About'
-    assert_includes last_response.body, ': dictionary form'
+    assert_includes last_response.body, %q(>Sign in</a>)
   end
 
   def test_view_individual_word_page
@@ -115,7 +115,7 @@ class ConstructionBuilderTest < Minitest::Test
     get last_response['Location']
 
     assert_equal 200, last_response.status
-    assert_includes last_response.body, 'Sign in to do that'
+    assert_includes last_response.body, 'Sign in as owner to do that'
   end
 
   def test_sign_in_page
