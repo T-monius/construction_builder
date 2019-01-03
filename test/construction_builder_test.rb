@@ -239,4 +239,59 @@ class ConstructionBuilderTest < Minitest::Test
     assert_includes last_response.body, %q(form</li>)
     refute_includes last_response.body, %q(>"hamburger"- noun)
   end
+
+  def test_attempting_to_delete_a_word_while_signed_out
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    
+    get 'vocab/001/hamburger'
+    assert_includes last_response.body, 'Sign in'
+
+    post '/vocab/001/hamburger/delete'
+    assert_equal 302, last_response.status
+    assert_equal "Sign in as owner to do that", session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(form of the word</a>)
+    assert_includes last_response.body, %q(to do that</h4>)
+  end
+
+  def test_rendering_the_page_to_add_a_new_word_form
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    
+    get '/vocab/001/hamburger/add_word_form'
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'first_person'
+  end
+
+  def test_attempting_to_add_a_new_word_form_signed_out
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    
+    post '/vocab/001/hamburger/add_word_form'
+    assert_equal 302, last_response.status
+    assert_equal 'Sign in as owner to do that', session[:message]
+
+    get last_response['Location']
+    assert_includes last_response.body, %q(form of the word</a>)
+    assert_includes last_response.body, %q(to do that</h4>)
+  end
+
+  def test_adding_a_new_word_form
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+
+    post '/vocab/001/hamburger/add_word_form', {word_form: 'hamburgers',
+                                                markers: 'plural'},
+                                               owner_session
+    assert_equal 302, last_response.status
+    assert_equal 'New word form has been added', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'Signed in as owner'
+    assert_includes last_response.body, 'plural'
+  end
 end

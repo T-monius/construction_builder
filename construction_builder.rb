@@ -282,7 +282,7 @@ post '/vocab/:id/:word/add_translation' do
     YAML.dump(@list, f)
   end
 
-  redirect "/vocab/#{@list[:id]}/#{@word_object.word}"
+  redirect "/vocab/#{id}/#{word}"
 end
 
 # route to delete a word from the list
