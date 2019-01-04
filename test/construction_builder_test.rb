@@ -294,4 +294,17 @@ class ConstructionBuilderTest < Minitest::Test
     assert_includes last_response.body, 'Signed in as owner'
     assert_includes last_response.body, 'plural'
   end
+
+  def test_deleting_a_word_form
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+
+    post '/vocab/001/run/delete_word_form/ran', {}, owner_session
+    assert_equal 302, last_response.status
+    assert_equal 'The form ran was deleted', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'run'
+  end
 end

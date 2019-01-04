@@ -11,8 +11,21 @@
 
 <% unless @word_object.forms.empty? %>
   <ul>
-    <% @word_object.forms.each do |form| %>
-    <li>"<%= form.form %>" -- Markers: <%= form.markers.map(&:to_s) %></li>
+      <% @word_object.forms.each do |form| %>
+        <li>
+          <p class="inline">"<%= form.form %></p>
+          <form class='inline' action="/vocab/<%= @list[:id] %>/<%= word %>/delete_word_form/<%= form.form %>" method='post'>
+            <button>Delete form</button>
+          </form>
+          <h5>Markers</h5>
+          <ul>
+            <% form.markers.each do |marker| %>
+              <li>
+                <%= marker.to_s %>
+              </li>
+            <% end %>
+          </ul>
+        </li>
   </ul>
   <% end %>
 <% end %>
@@ -25,5 +38,7 @@
 <p><a href="/vocab/<%= @list[:id] %>/<%= word %>/add_word_form">Add a new form of the word</a></p>
 
 <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/delete">
-  <button type="submit" name='delet_word'>Delete Word</button>
+  <button type="submit" name='delete_word'>Delete Word</button>
 </form>
+
+<a href="/vocab/<%= @list[:id] %>">Back to list</a>

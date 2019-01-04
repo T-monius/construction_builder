@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family: sans-serif;
   background-color: lightgrey;
@@ -12,11 +16,7 @@ a:visited {
   color: black;
 }
 
-h2 {
-  
-}
-
-header ul li {
+header {
   display: inline;
   font-family: sans-serif;
   color: black;
@@ -24,4 +24,21 @@ header ul li {
   padding: 1em;
   border: thin solid;
   border-color: black;
+}
+
+h2,
+h4 {
+  margin-top: 20px;
+}
+
+li.inline {
+  display: inline;
+}
+
+p.inline {
+  display: inline;
+}
+
+form.inline {
+  display: inline;
 }

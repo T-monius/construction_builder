@@ -311,15 +311,19 @@ get '/vocab/:id/:word/add_word_form' do
   erb :add_word_form
 end
 
+def array_of_markers(markers_string)
+  markers_string.scan(/[\w_]+/).map(&:to_sym).select do |marker|
+    APPROVED_MARKERS.include?(marker)
+  end
+end
+
 # route to add a new word form
 post '/vocab/:id/:word/add_word_form' do
   id = params[:id]
   word = params[:word]
   redirect_unless_owner("/vocab/#{id}/#{word}")
 
-  markers = params[:markers].scan(/[\w_]+/).map(&:to_sym).select do |marker|
-      APPROVED_MARKERS.include?(marker)
-    end
+  markers = array_of_markers(params[:markers])
   form = Form.new(params[:word_form], markers)
 
   list = load_list(id)
@@ -335,5 +339,27 @@ post '/vocab/:id/:word/add_word_form' do
 end
 
 # route to delete a word form
+post '/vocab/:id/:word/delete_word_form/:form' do
+  id = params[:id]
+  word = params[:word]
+  word_form = params[:form]
+  redirect_unless_owner("/vocab/#{id}/#{word}")
+
+  list = load_list(id)
+  modify_list(list) do |list|
+    word_object = list[:vocab].find do |word_object|
+      word_object.word == word
+    end
+
+    form = word_object.forms.find do |form|
+      form.form == word_form
+    end
+
+    word_object.forms.delete(form)
+  end
+
+  session[:message] = "The form #{word_form} was deleted"
+  redirect "/vocab/#{id}/#{word}"
+end
 
 # Route to sign in

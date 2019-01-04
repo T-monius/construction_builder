@@ -3,12 +3,13 @@
 <head>
   <title>Construction Builder</title>
   <link rel="stylesheet" type="text/css" href="/stylesheets/construction.css">
+  <link rel="stylesheet" type="text/css" href="/stylesheets/whitespace-reset.css">
 </head>
 <body>
   <header>
     <ul>
-      <li><a href="/">Home</a></li>
-      <li><a href="/about"></a>About</li>
+      <li class="inline"><a href="/">Home</a></li>
+      <li class="inline"><a href="/about"></a>About</li>
     </ul>
     <% if session[:message] %>
       <h4 class="message"><%= session.delete(:message) %></h4>
