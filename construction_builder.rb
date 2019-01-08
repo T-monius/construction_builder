@@ -5,7 +5,7 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
-# require 'pry'
+require 'pry'
 
 APPROVED_MARKERS = [:first_person, :second_person, :third_person,
            :plural, :singular, :neuter, :masculine,
@@ -52,6 +52,19 @@ configure do
   set :session_secret, 'secret'
 end
 
+helpers do
+  def current_editors
+    users_hash[:editors]
+  end
+
+  def user_lists(username)
+    load_vocab_lists.select do |list|
+      list[:owner] == username ||
+      list[:editors].include?(username)
+    end
+  end
+end
+
 def data_path
   if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/data", __FILE__)
@@ -95,10 +108,6 @@ end
 
 def load_list(id)
   load_vocab_lists.find { |list| list[:id] == id }
-end
-
-def user_lists(username)
-  load_vocab_lists.select { |list| list[:owner] == username }
 end
 
 def word_from_list(word, list)
@@ -159,9 +168,12 @@ def reroute(url, message)
   redirect url
 end
 
+def list_owner?(list)
+  session[:user_type] == 'owner' && list[:owner] == session[:username]
+end
+
 def redirect_unless_owner(url, list)
-  unless signed_in? && session[:user_type] == 'owner' &&
-         list[:owner] == session[:username]
+  unless signed_in? && list_owner?(list)
     reroute(url, 'Sign in as owner to do that')
   end
 end
@@ -169,7 +181,7 @@ end
 def valid_username?(username)
   users = users_hash
   !username.empty? && username.is_a?(String) &&
-  !users[:owners].include?(username)
+  !users[:owners].include?(username) && !users[:editors].include?(username)
 end
 
 def redirect_if_bad_username(username)
@@ -213,6 +225,9 @@ def modify_list(list)
   nil
 end
 
+# Return the next consecutive id in format '00x' (i.e. 002 after
+# 001) or fill a gap returning '003' if lists '002' and '004'
+# exist but not '003' (this could happen if a user was deleted)
 def new_list_id
   pattern = File.join(vocab_path, '*')
   list_filenames = Dir[pattern].map { |filepath| File.basename(filepath) }
@@ -228,7 +243,8 @@ end
 def add_list(username, list_name)
   new_id = format("%03d", new_list_id)
   new_user_list = { id: new_id, vocab: [],
-                    name: list_name, owner: username }
+                    name: list_name, owner: username,
+                    editors: [] }
   filename = "list#{new_id}.yml"
   userlist_filepath = File.join(vocab_path, filename)
 
@@ -259,7 +275,7 @@ get '/new_user' do
   erb :new_user
 end
 
-post '/new_user' do
+post '/new_owner' do
   @username = params[:username]
   password = params[:password]
   list_name = params[:list_name]
@@ -275,6 +291,26 @@ post '/new_user' do
   # Can extract this for a path to simply add a new list
   add_list(@username, list_name)
 
+  reroute('/', "The user #{@username} has been created.")
+end
+
+# Render the page to create an editor account
+get '/new_editor' do
+  erb :new_editor
+end
+
+# Create a new editor
+post '/new_editor' do
+  @username = params[:username]
+  password = params[:password]
+  redirect_if_bad_password(password)
+  redirect_if_bad_username(@username)
+
+  modify_users do |users|
+    users[:editors] << @username
+    users[:passwords][@username.to_sym] = encrypt(password).to_s
+  end
+  
   reroute('/', "The user #{@username} has been created.")
 end
 
@@ -315,6 +351,25 @@ get '/vocab/:id' do
   @list = load_list(params[:id])
 
   erb :vocab_list
+end
+
+# Display the page for adding an editor to the list
+get '/vocab/:id/add_editor' do
+  @list = load_list(params[:id])
+  redirect_unless_owner("/vocab/#{@id}", @list)
+
+  erb :add_editor
+end
+
+post '/vocab/:id/add_editor' do
+  list = load_list(params[:id])
+  editor = params[:editor_name]
+
+  modify_list(list) do |list|
+    list[:editors] << editor
+  end
+
+  reroute("/vocab/#{list[:id]}", "Editor #{editor} was added.")
 end
 
 # Route to view a particular word

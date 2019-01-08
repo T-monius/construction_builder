@@ -1,4 +1,5 @@
-<form action="/new_user" method="post">
+<h2>Create an Account as a list Owner by filling in the form</h2>
+<form action="/new_owner" method="post">
   <div>
     <label for='username'>Username:</label>
     <input type="text" name="username" value="<%= @username || '' %>" />
@@ -13,3 +14,5 @@
   </div>
   <button type="submit" >Add User</button>
 </form>
+<h2>Or</h2>
+<a href="/new_editor">Be an Editor instead?</a>

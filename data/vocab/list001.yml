@@ -31,3 +31,5 @@
   translation: ''
 :name: sample
 :owner: owner
+:editors:
+- editor

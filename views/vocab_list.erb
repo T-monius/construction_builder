@@ -19,4 +19,7 @@
 
 <% if signed_in? %>
   <p><a href="/vocab/<%= @list[:id] %>/add_word">Add a Word</a></p>
+  <% if list_owner?(@list) %>
+    <a href="/vocab/<%= @list[:id] %>/add_editor">Add Editor</a>
+  <% end %>
 <% end %>

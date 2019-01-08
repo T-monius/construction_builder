@@ -8,3 +8,5 @@
   translation: run
 :name: test
 :owner: jimbo
+:editors:
+- green_editor

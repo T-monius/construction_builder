@@ -3,8 +3,10 @@
   :owner: "$2a$10$KbhAkgZhaBEQC/U1u.LIDO.WYzehmB.TBi8yUsHT9X./PiFou7L/u"
   :editor: "$2a$10$uFnolal04GiYSUhERpW1k.9cfBgOnqQmV.AXE3HlMEtRJb/Qx8WFy"
   :jimbo: "$2a$10$M4K7eMDWww6gqKG3.nyuq.Hc.B8dn7TmCJg7iRGkEmHM8oZ4.r3AK"
+  :green_editor: "$2a$10$5Z3sqVcle4PFR0KWjSjWeu4V6/nkYmlxUkiBcjJns4zshXq2QG.By"
 :owners:
 - owner
 - jimbo
 :editors:
 - editor
+- green_editor

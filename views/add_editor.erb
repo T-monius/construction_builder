@@ -1,0 +1,12 @@
+<form action="/vocab/<%= @list[:id] %>/add_editor" method='post'>
+  <div>
+    <label for='editor_name'>Name of Editor</label>
+    <input type="text" name="editor_name">
+  </div>
+</form>
+<h2>Current Editors</h2>
+<ul>
+  <% current_editors.each do |editor| %>
+    <li><%= editor %></li>
+  <% end %>
+</ul>
