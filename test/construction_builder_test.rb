@@ -307,4 +307,30 @@ class ConstructionBuilderTest < Minitest::Test
     assert_equal 200, last_response.status
     assert_includes last_response.body, 'run'
   end
+
+  def test_viewing_the_page_to_add_a_user
+    get '/new_user'
+
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'Username:'
+    assert_includes last_response.body, %q(vocab list:</label)
+  end
+
+  def test_adding_a_user
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    user_file = content_from_main_data_path('users.yml')
+    create_document(data_path, 'users.yml', user_file)
+
+    post '/new_user', username: 'robby', password: 'Hippop*tomus',
+                      list_name: 'robbyzlist'
+
+    assert_equal 302, last_response.status
+    assert_equal 'The user robby has been created.', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'sample'
+    assert load_vocab_lists.any? { |list| list[:name] == 'robbyzlist'}
+  end
 end
