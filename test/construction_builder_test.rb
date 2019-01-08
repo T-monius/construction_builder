@@ -236,7 +236,7 @@ class ConstructionBuilderTest < Minitest::Test
 
     get last_response['Location']
     assert_equal 200, last_response.status
-    assert_includes last_response.body, %q(form</li>)
+    assert_includes last_response.body, %q(verb</li>)
     refute_includes last_response.body, %q(>"hamburger"- noun)
   end
 

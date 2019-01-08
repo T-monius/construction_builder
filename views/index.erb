@@ -4,6 +4,13 @@
   <li><%= @word1 %></li>
   <li>...</li>
 </ul>
+
+<% if signed_in? %>
+  <% @user_lists.each do |user_list| %>
+  <h2><a href='/vocab/<%= user_list[:id] %>'><%= user_list[:name] %></a>
+  <% end %>
+<% end %>
+
 <h2>Constructions</h2>
 <ul>
   <li>No Constructions Yet</li>

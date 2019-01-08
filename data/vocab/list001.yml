@@ -2,16 +2,6 @@
 :id: '001'
 :vocab:
 - !ruby/object:Word
-  word: write
-  type: verb
-  forms: []
-  translation: ''
-- !ruby/object:Word
-  word: hamburger
-  type: noun
-  forms: []
-  translation: ''
-- !ruby/object:Word
   word: walk
   type: verb
   forms: []
@@ -34,4 +24,10 @@
     - :singular
     - :plural
   translation: ''
+- !ruby/object:Word
+  word: hamburger
+  type: noun
+  forms: []
+  translation: ''
 :name: sample
+:owner: owner

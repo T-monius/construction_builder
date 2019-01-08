@@ -26,10 +26,11 @@ class Word
 end
 
 class Form
-  attr_accessor :form, :markers
+  attr_accessor :markers
+  attr_writer :form
 
   def initialize(form, markers=[])
-    self.form = form
+    self.form = form if form.is_a?(String)
     if markers.all? { |marker| APPROVED_MARKERS.include?(marker) }
       self.markers = markers
     else
@@ -39,6 +40,10 @@ class Form
 
   def add_marker(marker)
     self.markers << marker if APPROVED_MARKERS.include?(marker)
+  end
+
+  def to_s
+    @form
   end
 end
 
@@ -92,6 +97,10 @@ def load_list(id)
   load_vocab_lists.find { |list| list[:id] == id }
 end
 
+def user_lists(username)
+  load_vocab_lists.select { |list| list[:owner] == username }
+end
+
 def word_from_list(word, list)
   list[:vocab].find do |word_object|
     word_object.word == word
@@ -134,14 +143,63 @@ def user_type(username)
   'unknown'
 end
 
+def modify_users
+  users = users_hash
+  yield(users) if block_given?
+
+  filepath = File.join(data_path, 'users.yml')
+  File.open(filepath, 'w') do |f|
+    YAML.dump(users, f)
+  end
+  nil
+end
+
 def reroute(url, message)
   session[:message] = message
   redirect url
 end
 
-def redirect_unless_owner(url)
-  unless signed_in? && session[:user_type] == 'owner'
+def redirect_unless_owner(url, list)
+  unless signed_in? && session[:user_type] == 'owner' &&
+         list[:owner] == session[:username]
     reroute(url, 'Sign in as owner to do that')
+  end
+end
+
+def valid_username?(username)
+  users = users_hash
+  !username.empty? && username.is_a?(String) &&
+  !users[:owners].include?(username)
+end
+
+def redirect_if_bad_username(username)
+  unless valid_username?(username)
+    reroute('/new_user', 'Provide a unique username')
+  end
+end
+
+def valid_password?(password)
+  return false if password.length < 6
+  return false if password.downcase.count('^a-z') < 1
+  return false if password.count('A-Z') < 1
+  true
+end
+
+def redirect_if_bad_password(password)
+  unless valid_password?(password)
+    reroute('/new_user', 'The password must be at least six characters,
+                 have a special character, 
+                 and at least one capital letter.')
+  end
+end
+
+def valid_list_name?(list_name)
+  !list_name.empty?
+end
+
+def redirect_if_bad_list_name(list_name)
+  unless valid_list_name?(list_name)
+    reroute('/new_user', 'Please provide a name for your list.')
   end
 end
 
@@ -152,6 +210,31 @@ def modify_list(list)
   File.open(filepath, 'w') do |f|
     YAML.dump(list, f)
   end
+  nil
+end
+
+def new_list_id
+  pattern = File.join(vocab_path, '*')
+  list_filenames = Dir[pattern].map { |filepath| File.basename(filepath) }
+
+  ids = list_filenames.map { |filename| filename.scan(/\d/).join.to_i }
+  ids.sort!
+  ids.each_with_index do |current_id, idx|
+    next_id = ids[idx + 1]
+    return current_id + 1 if next_id != current_id + 1
+  end
+end
+
+def add_list(username, list_name)
+  new_id = format("%03d", new_list_id)
+  new_user_list = { id: new_id, vocab: [],
+                    name: list_name, owner: username }
+  filename = "list#{new_id}.yml"
+  userlist_filepath = File.join(vocab_path, filename)
+
+  File.open(userlist_filepath, 'w') do |f|
+    YAML.dump(new_user_list, f)
+  end  
 end
 
 def unique_word?(list, word)
@@ -165,7 +248,34 @@ get '/' do
   @word, @word1 = @sample[:vocab][0..1].map(&:word) unless list.empty?
   @word, @word1 = ['..', '..'] if list.empty?
 
+  if signed_in?
+    @user_lists = user_lists(session[:username])
+  end
+
   erb :index
+end
+
+get '/new_user' do
+  erb :new_user
+end
+
+post '/new_user' do
+  @username = params[:username]
+  password = params[:password]
+  list_name = params[:list_name]
+  redirect_if_bad_password(password)
+  redirect_if_bad_username(@username)
+  redirect_if_bad_list_name(list_name)
+
+  modify_users do |users|
+    users[:owners] << @username
+    users[:passwords][@username.to_sym] = encrypt(password).to_s
+  end
+
+  # Can extract this for a path to simply add a new list
+  add_list(@username, list_name)
+
+  reroute('/', "The user #{@username} has been created.")
 end
 
 # Render the sign in page
@@ -191,6 +301,7 @@ post '/sign_in' do
   end
 end
 
+# Route to sign in
 post '/sign_out' do
   session.delete(:username)
   session.delete(:user_type)
@@ -236,16 +347,16 @@ end
 # route to add a word to the list
 get '/vocab/:id/add_word' do
   @id = params[:id]
-  redirect_unless_owner("/vocab/#{@id}")
+  redirect_unless_owner("/vocab/#{@id}", load_list(@id))
 
   erb :new_word
 end
 
 post '/vocab/:id/add_word' do
   id = params[:id]
-  redirect_unless_owner("/vocab/#{id}")
-  word = params[:word]
   @list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}", @list)
+  word = params[:word]
   unless unique_word?(@list, word)
     session[:message]= 'Sorry, that word is already in the list'
     status 422
@@ -260,38 +371,30 @@ post '/vocab/:id/add_word' do
   erb :vocab_list
 end
 
-
-# *** Probably make a method that takes a block in order to
-#     DRY up this route, the following, and any other like
-#     them                                                 ***
 # Add a new translation for a particular word
 post '/vocab/:id/:word/add_translation' do
   id = params[:id]
   word = params[:word]
-  redirect_unless_owner("/vocab/#{id}/#{word}")
+  @list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}/#{word}", @list)
   new_translation = params[:new_translation]
   reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if new_translation.empty?
 
-  @list = load_list(id)
   @word_object = word_from_list(word, @list)
-
-  @word_object.translation = new_translation
-
-  filepath = File.join(vocab_path, "list#{id}.yml")
-  File.open(filepath, 'w') do |f|
-    YAML.dump(@list, f)
+  modify_list(@list) do |list|
+    @word_object.translation = new_translation
   end
 
-  redirect "/vocab/#{id}/#{word}"
+  reroute("/vocab/#{id}/#{word}", 'Translation added')
 end
 
 # route to delete a word from the list
 post '/vocab/:id/:word/delete' do
   id = params[:id]
   word = params[:word]
-  redirect_unless_owner("/vocab/#{id}/#{word}")
-
   list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+
   modify_list(list) do |list|
     word_object = list[:vocab].find do |word_object|
       word_object.word == word
@@ -317,21 +420,24 @@ def array_of_markers(markers_string)
   end
 end
 
+def retrieve_word_from_list(word, list)
+  list[:vocab].find do |word_object|
+    word_object.word == word
+  end
+end
+
 # route to add a new word form
 post '/vocab/:id/:word/add_word_form' do
   id = params[:id]
   word = params[:word]
-  redirect_unless_owner("/vocab/#{id}/#{word}")
+  list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}/#{word}", list)
 
   markers = array_of_markers(params[:markers])
   form = Form.new(params[:word_form], markers)
 
-  list = load_list(id)
   modify_list(list) do |list|
-    word_object = list[:vocab].find do |word_object|
-      word_object.word == word
-    end
-    word_object.forms << form
+    retrieve_word_from_list(word, list).forms << form
   end
 
   session[:message] = 'New word form has been added'
@@ -343,16 +449,14 @@ post '/vocab/:id/:word/delete_word_form/:form' do
   id = params[:id]
   word = params[:word]
   word_form = params[:form]
-  redirect_unless_owner("/vocab/#{id}/#{word}")
-
   list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+
   modify_list(list) do |list|
-    word_object = list[:vocab].find do |word_object|
-      word_object.word == word
-    end
+    word_object = retrieve_word_from_list(word, list)
 
     form = word_object.forms.find do |form|
-      form.form == word_form
+      form.to_s == word_form
     end
 
     word_object.forms.delete(form)
@@ -361,5 +465,3 @@ post '/vocab/:id/:word/delete_word_form/:form' do
   session[:message] = "The form #{word_form} was deleted"
   redirect "/vocab/#{id}/#{word}"
 end
-
-# Route to sign in

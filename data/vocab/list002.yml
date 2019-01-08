@@ -1,0 +1,10 @@
+---
+:id: '002'
+:vocab:
+- !ruby/object:Word
+  word: correr
+  type: verb
+  forms: []
+  translation: run
+:name: test
+:owner: jimbo

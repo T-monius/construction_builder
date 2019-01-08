@@ -1,4 +1,4 @@
-<form action="/sign_in" method="post">
+<form action="/new_user" method="post">
   <div>
     <label for='username'>Username:</label>
     <input type="text" name="username" value="<%= @username || '' %>" />
@@ -7,7 +7,9 @@
     <label for='password'>Password:</label>
     <input type="text" name="password"/>    
   </div>
-  <button type="submit" >Sign in</button>
+  <div>
+    <label for='list_name'>Name your vocab list:</label>
+    <input type="text" name="list_name"/>    
+  </div>
+  <button type="submit" >Add User</button>
 </form>
-
-<a href="/new_user">New user</a>

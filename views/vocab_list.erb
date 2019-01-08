@@ -8,13 +8,13 @@
 <% end %>
 <% @list[:vocab].each do |word_object| %>
   <li><a href="/vocab/<%= @list[:id] %>/<%= word_object.word %>">"<%= word_object.word %>"</a> - <%= word_object.type %></li>
-    <% unless word_object.forms.empty? %>
+<!--     <% unless word_object.forms.empty? %>
       <ul>
-        <% word_object.forms.each do |grammar_term, form| %>
-        <li>"<%= form %>": <%= grammar_term %> form</li>
+        <% word_object.forms.each do |form| %>
+        <li>"<%= form.to_s %>"</li>
       </ul>
       <% end %>
-    <% end %>
+    <% end %> -->
 <% end %>
 
 <% if signed_in? %>

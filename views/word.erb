@@ -13,8 +13,8 @@
   <ul>
       <% @word_object.forms.each do |form| %>
         <li>
-          <p class="inline">"<%= form.form %></p>
-          <form class='inline' action="/vocab/<%= @list[:id] %>/<%= word %>/delete_word_form/<%= form.form %>" method='post'>
+          <p class="inline">"<%= form.to_s %></p>
+          <form class='inline' action="/vocab/<%= @list[:id] %>/<%= word %>/delete_word_form/<%= form.to_s %>" method='post'>
             <button>Delete form</button>
           </form>
           <h5>Markers</h5>
