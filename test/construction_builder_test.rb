@@ -333,4 +333,28 @@ class ConstructionBuilderTest < Minitest::Test
     assert_includes last_response.body, 'sample'
     assert load_vocab_lists.any? { |list| list[:name] == 'robbyzlist'}
   end
+
+  def test_cannont_modify_non_owned_list
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    user_file = content_from_main_data_path('users.yml')
+    create_document(data_path, 'users.yml', user_file)
+
+    post '/new_user', username: 'robby', password: 'Hippop*tomus',
+                      list_name: 'robbyzlist'
+
+    assert_equal 302, last_response.status
+    assert_equal 'The user robby has been created.', session[:message]
+
+    post '/vocab/001/add_word', word: 'turkey',
+                                "rack.session" => { username: "editor",
+                                signed_in: true, user_type: 'editor' }
+
+    assert_equal 302, last_response.status
+    assert_equal 'Sign in as owner to do that', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(<h2>sample)
+  end
 end
