@@ -5,7 +5,7 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
-require 'pry'
+# require 'pry'
 
 APPROVED_MARKERS = [:first_person, :second_person, :third_person,
            :plural, :singular, :neuter, :masculine,
@@ -15,13 +15,18 @@ APPROVED_MARKERS = [:first_person, :second_person, :third_person,
 
 class Word
   attr_accessor :word, :type, :forms, :translation,
-                :provisional_translation
+                :provisional_translation, :form_queue
 
   def initialize(word, type,translation='')
     self.word = word
     self.type = type
     self.forms = []
     self.translation = translation
+    self.form_queue = []
+  end
+
+  def to_s
+    word
   end
 end
 
@@ -178,6 +183,16 @@ def redirect_unless_owner(url, list)
   end
 end
 
+def list_editor?(list)
+  session[:user_type] == 'editor' && list[:editors].include?(session[:username])
+end
+
+def redirect_unless_owner_or_editor(url, list)
+  unless signed_in? && list_owner?(list) || list_editor?(list)
+    reroute(url, 'Sign in as owner or editor to do that')
+  end
+end
+
 def valid_username?(username)
   users = users_hash
   !username.empty? && username.is_a?(String) &&
@@ -244,7 +259,8 @@ def add_list(username, list_name)
   new_id = format("%03d", new_list_id)
   new_user_list = { id: new_id, vocab: [],
                     name: list_name, owner: username,
-                    editors: [] }
+                    editors: [], delete_queue: [],
+                    new_word_queue: [] }
   filename = "list#{new_id}.yml"
   userlist_filepath = File.join(vocab_path, filename)
 
@@ -399,18 +415,19 @@ post '/vocab/:id/:word/translation' do
   end
 end
 
-# route to add a word to the list
+# Render the form to add a new word
 get '/vocab/:id/add_word' do
   @id = params[:id]
-  redirect_unless_owner("/vocab/#{@id}", load_list(@id))
+  redirect_unless_owner_or_editor("/vocab/#{@id}", load_list(@id))
 
   erb :new_word
 end
 
+# route to add a word to the list
 post '/vocab/:id/add_word' do
   id = params[:id]
   @list = load_list(id)
-  redirect_unless_owner("/vocab/#{id}", @list)
+  redirect_unless_owner_or_editor("/vocab/#{id}", @list)
   word = params[:word]
   unless unique_word?(@list, word)
     session[:message]= 'Sorry, that word is already in the list'
@@ -420,10 +437,14 @@ post '/vocab/:id/add_word' do
   word_object = Word.new(word, params[:word_type])
 
   modify_list(@list) do |list|
-    list[:vocab] << word_object
+    list[:vocab] << word_object if list_owner?(@list)
+    list[:new_word_queue] << word_object if list_editor?(@list)
   end
-  
-  erb :vocab_list
+
+  session[:message] = "Word #{word} was added" if list_owner?(@list)
+  session[:message] = "Added #{word} to new word queue" if list_editor?(@list)
+  # erb :vocab_list
+  redirect "/vocab/#{id}"
 end
 
 # Add a new translation for a particular word
@@ -431,16 +452,20 @@ post '/vocab/:id/:word/add_translation' do
   id = params[:id]
   word = params[:word]
   @list = load_list(id)
-  redirect_unless_owner("/vocab/#{id}/#{word}", @list)
+  redirect_unless_owner_or_editor("/vocab/#{id}/#{word}", @list)
   new_translation = params[:new_translation]
   reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if new_translation.empty?
 
   @word_object = word_from_list(word, @list)
   modify_list(@list) do |list|
-    @word_object.translation = new_translation
+    @word_object.translation = new_translation if list_owner?(@list)
+    @word_object.provisional_translation = new_translation if list_editor?(@list)
   end
 
-  reroute("/vocab/#{id}/#{word}", 'Translation added')
+  message = 'Translation added' if list_owner?(@list)
+  message = 'Translation provisionally added' if list_editor?(@list)
+
+  reroute("/vocab/#{id}/#{word}", message)
 end
 
 # route to delete a word from the list
@@ -448,16 +473,18 @@ post '/vocab/:id/:word/delete' do
   id = params[:id]
   word = params[:word]
   list = load_list(id)
-  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+  redirect_unless_owner_or_editor("/vocab/#{id}/#{word}", list)
 
   modify_list(list) do |list|
     word_object = list[:vocab].find do |word_object|
       word_object.word == word
     end
-    list[:vocab].delete(word_object)
+    list[:vocab].delete(word_object) if list_owner?(list)
+    list[:delete_queue] << word_object if list_editor?(list)
   end
 
-  session[:message] = "The word '#{word}' was deleted."
+  session[:message] = "The word '#{word}' was deleted." if list_owner?(list)
+  session[:message] = "Added '#{word}' to deletion queue" if list_editor?(list)
   redirect "/vocab/#{id}"
 end
 
@@ -486,16 +513,18 @@ post '/vocab/:id/:word/add_word_form' do
   id = params[:id]
   word = params[:word]
   list = load_list(id)
-  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+  redirect_unless_owner_or_editor("/vocab/#{id}/#{word}", list)
 
   markers = array_of_markers(params[:markers])
   form = Form.new(params[:word_form], markers)
 
   modify_list(list) do |list|
-    retrieve_word_from_list(word, list).forms << form
+    retrieve_word_from_list(word, list).forms << form if list_owner?(list)
+    retrieve_word_from_list(word, list).form_queue << form if list_editor?(list)
   end
 
-  session[:message] = 'New word form has been added'
+  session[:message] = 'New word form has been added' if list_owner?(list)
+  session[:message] = 'Word was queued for addition' if list_editor?(list)
   redirect "/vocab/#{id}/#{word}"
 end
 

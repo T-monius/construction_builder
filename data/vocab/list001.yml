@@ -2,11 +2,6 @@
 :id: '001'
 :vocab:
 - !ruby/object:Word
-  word: walk
-  type: verb
-  forms: []
-  translation: ''
-- !ruby/object:Word
   word: run
   type: verb
   forms:
@@ -24,12 +19,27 @@
     - :singular
     - :plural
   translation: ''
+  form_queue:
+  - !ruby/object:Form
+    form: running
+    markers:
+    - :neuter
 - !ruby/object:Word
+  word: walk
+  type: verb
+  forms: []
+  translation: ''
+  form_queue: []
+- &1 !ruby/object:Word
   word: hamburger
   type: noun
   forms: []
   translation: ''
+  form_queue: []
 :name: sample
 :owner: owner
 :editors:
 - editor
+:delete_queue:
+- *1
+:new_word_queue: []

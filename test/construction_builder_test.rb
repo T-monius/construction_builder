@@ -6,7 +6,6 @@ require 'minitest/autorun'
 require 'rack/test'
 require_relative '../construction_builder'
 require 'fileutils'
-# require 'pry'
 
 class ConstructionBuilderTest < Minitest::Test
   include Rack::Test::Methods
@@ -50,6 +49,23 @@ class ConstructionBuilderTest < Minitest::Test
     end
   end
 
+  def sample_list
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+  end
+
+  def user_file
+    user_file = content_from_main_data_path('users.yml')
+    create_document(data_path, 'users.yml', user_file)
+  end
+
+  def sample_list_and_user_file
+    sample_list = content_from_main_vocab_file('list001.yml')
+    create_document(vocab_path, 'list001.yml', sample_list)
+    user_file = content_from_main_data_path('users.yml')
+    create_document(data_path, 'users.yml', user_file)
+  end
+
   def test_word_object
     word_object = Word.new('happy', 'adj')
     assert_equal('happy', word_object.word)
@@ -59,8 +75,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_index
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get '/'
 
@@ -71,8 +86,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_individual_vocab_list_page
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get '/vocab/001'
 
@@ -83,8 +97,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_view_individual_word_page
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get '/vocab/001/walk'
 
@@ -95,8 +108,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_showing_the_translation_of_a_word
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
     
     post '/vocab/001/walk/translation'
 
@@ -105,8 +117,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_attempting_to_add_a_translation_signed_out
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
     
     post '/vocab/001/walk/add_translation'
 
@@ -115,7 +126,7 @@ class ConstructionBuilderTest < Minitest::Test
     get last_response['Location']
 
     assert_equal 200, last_response.status
-    assert_includes last_response.body, 'Sign in as owner to do that'
+    assert_includes last_response.body, 'Sign in as owner or editor to do that'
   end
 
   def test_sign_in_page
@@ -127,11 +138,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_signing_in_as_owner
-    content = content_from_main_data_path('users.yml')
-    create_document(data_path, 'users.yml', content)
-
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list_and_user_file
 
     post '/sign_in', username: 'owner', password: 'hello'
 
@@ -144,11 +151,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_signing_in_as_editor
-    content = content_from_main_data_path('users.yml')
-    create_document(data_path, 'users.yml', content)
-
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list_and_user_file
 
     post '/sign_in', username: 'editor', password: 'hello1'
 
@@ -161,8 +164,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_signing_in_with_bad_credentials
-    content = content_from_main_data_path('users.yml')
-    create_document(data_path, 'users.yml', content)
+    user_file
 
     post '/sign_in', username: 'ralph', password: 'yep'
 
@@ -172,8 +174,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_sign_out
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get '/', {}, owner_session
     assert_includes last_response.body, "Signed in as owner"
@@ -189,8 +190,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_viewing_a_non_existent_translation
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get '/vocab/001/hamburger', {}, owner_session
     assert_includes last_response.body, 'Signed in as owner'
@@ -201,8 +201,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_adding_a_translation
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get '/vocab/001/walk', {}, owner_session
     assert_includes last_response.body, 'Signed in as owner'
@@ -224,8 +223,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_deleting_a_word_from_a_list
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     get 'vocab/001/hamburger', {}, owner_session
     assert_includes last_response.body, 'Signed in as owner'    
@@ -241,15 +239,14 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_attempting_to_delete_a_word_while_signed_out
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
     
     get 'vocab/001/hamburger'
     assert_includes last_response.body, 'Sign in'
 
     post '/vocab/001/hamburger/delete'
     assert_equal 302, last_response.status
-    assert_equal "Sign in as owner to do that", session[:message]
+    assert_equal "Sign in as owner or editor to do that", session[:message]
 
     get last_response['Location']
     assert_equal 200, last_response.status
@@ -258,8 +255,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_rendering_the_page_to_add_a_new_word_form
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
     
     get '/vocab/001/hamburger/add_word_form'
     assert_equal 200, last_response.status
@@ -267,12 +263,11 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_attempting_to_add_a_new_word_form_signed_out
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
     
     post '/vocab/001/hamburger/add_word_form'
     assert_equal 302, last_response.status
-    assert_equal 'Sign in as owner to do that', session[:message]
+    assert_equal 'Sign in as owner or editor to do that', session[:message]
 
     get last_response['Location']
     assert_includes last_response.body, %q(form of the word</a>)
@@ -280,8 +275,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_adding_a_new_word_form
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     post '/vocab/001/hamburger/add_word_form', {word_form: 'hamburgers',
                                                 markers: 'plural'},
@@ -296,8 +290,7 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_deleting_a_word_form
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
+    sample_list
 
     post '/vocab/001/run/delete_word_form/ran', {}, owner_session
     assert_equal 302, last_response.status
@@ -317,12 +310,9 @@ class ConstructionBuilderTest < Minitest::Test
   end
 
   def test_adding_a_user
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
-    user_file = content_from_main_data_path('users.yml')
-    create_document(data_path, 'users.yml', user_file)
+    sample_list_and_user_file
 
-    post '/new_user', username: 'robby', password: 'Hippop*tomus',
+    post '/new_owner', username: 'robby', password: 'Hippop*tomus',
                       list_name: 'robbyzlist'
 
     assert_equal 302, last_response.status
@@ -334,13 +324,10 @@ class ConstructionBuilderTest < Minitest::Test
     assert load_vocab_lists.any? { |list| list[:name] == 'robbyzlist'}
   end
 
-  def test_cannont_modify_non_owned_list
-    sample_list = content_from_main_vocab_file('list001.yml')
-    create_document(vocab_path, 'list001.yml', sample_list)
-    user_file = content_from_main_data_path('users.yml')
-    create_document(data_path, 'users.yml', user_file)
+  def test_cannot_modify_non_owned_list
+    sample_list_and_user_file
 
-    post '/new_user', username: 'robby', password: 'Hippop*tomus',
+    post '/new_owner', username: 'robby', password: 'Hippop*tomus',
                       list_name: 'robbyzlist'
 
     assert_equal 302, last_response.status
@@ -351,10 +338,40 @@ class ConstructionBuilderTest < Minitest::Test
                                 signed_in: true, user_type: 'editor' }
 
     assert_equal 302, last_response.status
-    assert_equal 'Sign in as owner to do that', session[:message]
+    assert_equal 'Sign in as owner or editor to do that', session[:message]
 
     get last_response['Location']
     assert_equal 200, last_response.status
     assert_includes last_response.body, %q(<h2>sample)
+  end
+
+  def test_add_a_new_word_as_editor
+    sample_list_and_user_file
+
+    post '/vocab/001/add_word', {word: 'turkey'}, editor_session
+    assert_equal 302, last_response.status
+    assert_equal 'Added turkey to new word queue', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(<h2>sample)
+    assert load_list('001')[:vocab].any? do |word_object|
+      word_object.to_s == 'turkey'
+    end
+  end
+
+  def test_queue_a_word_for_deletion_as_editor
+    sample_list_and_user_file
+
+    post '/vocab/001/hamburger/delete', {}, editor_session
+    assert_equal 302, last_response.status
+    assert_equal "Added 'hamburger' to deletion queue", session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(<h2>sample)
+    assert load_list('001')[:delete_queue].any? do |word_object|
+      word_object.to_s == 'hamburger'
+    end
   end
 end
