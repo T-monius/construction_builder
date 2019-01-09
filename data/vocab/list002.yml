@@ -6,7 +6,13 @@
   type: verb
   forms: []
   translation: run
-  form_queue: []
+  form_queue:
+  - !ruby/object:Form
+    form: corra
+    markers:
+    - :imperative
+    - :second_person
+  provisional_translation: run
 :name: test
 :owner: jimbo
 :editors:

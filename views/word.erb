@@ -41,4 +41,5 @@
   <button type="submit" name='delete_word'>Delete Word</button>
 </form>
 
+<a href="/vocab/<%= @list[:id] %>/<%= next_word_in_list(word, @list) %>">Next Word</a>
 <a href="/vocab/<%= @list[:id] %>">Back to list</a>

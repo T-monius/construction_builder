@@ -121,6 +121,16 @@ def word_from_list(word, list)
   end
 end
 
+def next_word_in_list(current_word, list)
+  current_index = list[:vocab].find_index do |word|
+    word.to_s == current_word
+  end
+  if current_index == list[:vocab].length - 1
+    return list[:vocab][0].to_s
+  end
+  list[:vocab][current_index + 1].to_s
+end
+
 def encrypt(password)
   BCrypt::Password.create(password)
 end
@@ -524,7 +534,7 @@ post '/vocab/:id/:word/add_word_form' do
   end
 
   session[:message] = 'New word form has been added' if list_owner?(list)
-  session[:message] = 'Word was queued for addition' if list_editor?(list)
+  session[:message] = 'Word form was queued for addition' if list_editor?(list)
   redirect "/vocab/#{id}/#{word}"
 end
 
