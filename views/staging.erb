@@ -1,0 +1,43 @@
+<!-- The following forms until line 44 are for the vocab list template. Owner confirming the editor's queues -->
+      <form action='/vocab/<%= @list[:id] %>/add_word' method='post'>
+        <div>
+          <input type="text" name="word" value="<%= word_object.to_s %>">
+        </div>
+        <div>
+          <input type="text" name="word_type" value="<%= word_object.type %>">
+        </div>
+        <button type='submit' name='add_new_word'>Add Word</button>
+      </form>
+
+<!-- This renders the page as I'd like it to but creates a nested form system that ends up submitting the word for addition when attempting to delete -->
+            <!-- add new word -->
+      <form action='/vocab/<%= @list[:id] %>/add_word' method='post'>
+        <div>
+          <input type="text" name="word" value="<%= word_object.to_s %>">
+          <input type="text" name="word_type" value="<%= word_object.type %>">
+        </div>
+        <div>
+          <button type='submit' name='add_new_word'>Add Word</button>
+          <!-- delete -->
+          <form method="post" action='/vocab/<%= @list[:id] %>/<%= word_object.to_s %>/dequeue_word/new_word_queue'>
+            <button type="submit" name="dequeue_new_word">Don't Add</button>
+          </form>         
+        </div>
+      </form>
+
+<!-- This renders the page as I'd like to see it but doesn't work -->
+            <!-- add new word -->
+      <form action='/vocab/<%= @list[:id] %>/add_word' method='post'>
+        <div>
+          <input type="text" name="word" value="<%= word_object.to_s %>">
+          <input type="text" name="word_type" value="<%= word_object.type %>">
+        </div>
+      </form>
+      <div>
+        <button type='submit' name='add_new_word'>Add Word</button>
+        <button type="submit" name="dequeue_new_word">Don't Add</button>
+      </div>
+      <!-- dequeue from new word queue -->
+      <form method="post" action='/vocab/<%= @list[:id] %>/<%= word_object.to_s %>/dequeue_word/new_word_queue'>
+      </form>
+    <% end %>

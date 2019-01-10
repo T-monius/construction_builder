@@ -5,7 +5,7 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
-# require 'pry'
+require 'pry'
 
 APPROVED_MARKERS = [:first_person, :second_person, :third_person,
            :plural, :singular, :neuter, :masculine,
@@ -433,6 +433,12 @@ get '/vocab/:id/add_word' do
   erb :new_word
 end
 
+def already_in_new_word_queue?(list, word)
+  list[:new_word_queue].any? do |word_object|
+    word.to_s == word
+  end
+end
+
 # route to add a word to the list
 post '/vocab/:id/add_word' do
   id = params[:id]
@@ -444,10 +450,17 @@ post '/vocab/:id/add_word' do
     status 422
     erb :vocab_list
   end
-  word_object = Word.new(word, params[:word_type])
+  if already_in_new_word_queue?(@list, word)
+    word_object = @list[:new_word_queue].find do |word_object|
+      word_object.to_s == word
+    end
+  else
+    word_object = Word.new(word, params[:word_type])
+  end
 
   modify_list(@list) do |list|
     list[:vocab] << word_object if list_owner?(@list)
+    list[:new_word_queue].delete(word_object) if list_owner?(@list)
     list[:new_word_queue] << word_object if list_editor?(@list)
   end
 
@@ -490,11 +503,35 @@ post '/vocab/:id/:word/delete' do
       word_object.word == word
     end
     list[:vocab].delete(word_object) if list_owner?(list)
+    list[:delete_queue].delete(word_object) if list_owner?(list)
     list[:delete_queue] << word_object if list_editor?(list)
   end
 
   session[:message] = "The word '#{word}' was deleted." if list_owner?(list)
   session[:message] = "Added '#{word}' to deletion queue" if list_editor?(list)
+  redirect "/vocab/#{id}"
+end
+
+# Dequeue a word from the vocab list
+post '/vocab/:id/:word/dequeue_word/:queue' do
+  id = params[:id]
+  word = params[:word]
+  queue = params[:queue].to_sym
+  list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+
+  modify_list(list) do |list|
+    word_object = list[queue].find do |word_object|
+      word_object.word == word
+    end
+    list[queue].delete(word_object)
+  end
+
+  str = "The word '#{word}' no longer queued for deletion."
+  str1 = "The word '#{word}' no longer queued for addition."
+  queue == :delete_queue ? message = str : message = str1
+
+  session[:message] = message
   redirect "/vocab/#{id}"
 end
 

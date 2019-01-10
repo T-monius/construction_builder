@@ -30,7 +30,7 @@
   forms: []
   translation: ''
   form_queue: []
-- &1 !ruby/object:Word
+- !ruby/object:Word
   word: hamburger
   type: noun
   forms: []
@@ -40,6 +40,5 @@
 :owner: owner
 :editors:
 - editor
-:delete_queue:
-- *1
+:delete_queue: []
 :new_word_queue: []
