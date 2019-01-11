@@ -36,30 +36,45 @@
   <button type="submit">Add Translation</button>
 </form>
 
+<% if list_owner?(@list) %>
+  <h2>Editor suggested translation</h2>
+  <!-- Add Editor's suggestion -->
+  <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/confirm_translation">
+    <input type="text" name="confirm_translation" value="<%= @word_object.provisional_translation %>">
+    <button type="submit">Add Translation</button>
+  </form>
+  <!-- Delete Editor's Suggestion -->
+  <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/clear_provisional_translation">
+    <button type="submit">Reject Translation</button>
+  </form>
+<% end %>
+
 <p><a href="/vocab/<%= @list[:id] %>/<%= word %>/add_word_form">Add a new form of the word</a></p>
 
-<h2>Editors recommended new forms of the word</h2>
-<% if @word_object.form_queue.empty? %>
-  <p>None</p>
-<% else %>
-  <% @word_object.form_queue.each do |queued_form| %>
-    <!-- Add form -->
-    <form action='/vocab/<%= @list[:id] %>/<%= word %>/add_word_form' method='post'>
-      <div>
-        <label for='word_form'>Form of the word:</label>
-        <input type="text" name="word_form" value="<%= queued_form.to_s %>">
-      </div>
-      <div>
-        <label for='markers'>Markers for this form:</label>
-        <input type="text" name="markers" value="<%= queued_form.markers.map(&:to_s).join(', ') %>">
-      </div>
-      <button type="submit" name="add_word_form">Add Form</button>
-    </form>
-    <!-- Dequeue Form -->
-    <form action='/vocab/<%= @list[:id] %>/<%= word %>/delete_word_form/<%= queued_form.to_s %>' method="post">
-      <label for='dequeue_word_form'>Dequeue Word Form</label>
-      <input type="submit" name="dequeue_word_form">
-    </form>
+<% if list_owner?(@list) %>
+  <h2>Editors recommended new forms of the word</h2>
+  <% if @word_object.form_queue.empty? %>
+    <p>None</p>
+  <% else %>
+    <% @word_object.form_queue.each do |queued_form| %>
+      <!-- Add form -->
+      <form action='/vocab/<%= @list[:id] %>/<%= word %>/add_word_form' method='post'>
+        <div>
+          <label for='word_form'>Form of the word:</label>
+          <input type="text" name="word_form" value="<%= queued_form.to_s %>">
+        </div>
+        <div>
+          <label for='markers'>Markers for this form:</label>
+          <input type="text" name="markers" value="<%= queued_form.markers.map(&:to_s).join(', ') %>">
+        </div>
+        <button type="submit" name="add_word_form">Add Form</button>
+      </form>
+      <!-- Dequeue Form -->
+      <form action='/vocab/<%= @list[:id] %>/<%= word %>/delete_word_form/<%= queued_form.to_s %>' method="post">
+        <label for='dequeue_word_form'>Dequeue Word Form</label>
+        <input type="submit" name="dequeue_word_form">
+      </form>
+    <% end %>
   <% end %>
 <% end %>
 

@@ -5,7 +5,7 @@ require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
-require 'pry'
+# require 'pry'
 
 APPROVED_MARKERS = [:first_person, :second_person, :third_person,
            :plural, :singular, :neuter, :masculine,
@@ -425,6 +425,59 @@ post '/vocab/:id/:word/translation' do
   end
 end
 
+# Add a new translation for a particular word
+post '/vocab/:id/:word/add_translation' do
+  id = params[:id]
+  word = params[:word]
+  list = load_list(id)
+  translation = params[:new_translation]
+  redirect_unless_owner_or_editor("/vocab/#{id}/#{word}", list)
+  reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if translation.empty?
+
+  word_object = word_from_list(word, list)
+  modify_list(list) do |list|
+    word_object.translation = translation if list_owner?(list)
+    word_object.provisional_translation = translation if list_editor?(list)
+  end
+
+  message = 'Translation added' if list_owner?(list)
+  message = 'Translation provisionally added' if list_editor?(list)
+
+  reroute("/vocab/#{id}/#{word}", message)
+end
+
+# Accept and add the editor's suggested translation
+post '/vocab/:id/:word/confirm_translation' do
+  id = params[:id]
+  word = params[:word]
+  list = load_list(id)
+  translation = params[:confirm_translation]
+  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+  reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if translation.empty?
+
+  word_object = word_from_list(word, list)
+  modify_list(list) do |list|
+    word_object.translation = translation
+    word_object.provisional_translation = ''
+  end
+
+  reroute("/vocab/#{id}/#{word}", 'Translation added')
+end
+
+# Reject and clear the editor's provisional translation
+post '/vocab/:id/:word/clear_provisional_translation' do
+  id = params[:id]
+  word = params[:word]
+  list = load_list(id)
+  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+  word_object = word_from_list(word, list)
+  modify_list(list) do |list|
+    word_object.provisional_translation = ''
+  end
+
+  reroute("/vocab/#{id}/#{word}", 'Provisional Translation removed')
+end
+
 # Render the form to add a new word
 get '/vocab/:id/add_word' do
   @id = params[:id]
@@ -470,29 +523,7 @@ post '/vocab/:id/add_word' do
 
   session[:message] = "Word #{word} was added" if list_owner?(@list)
   session[:message] = "Added #{word} to new word queue" if list_editor?(@list)
-  # erb :vocab_list
   redirect "/vocab/#{id}"
-end
-
-# Add a new translation for a particular word
-post '/vocab/:id/:word/add_translation' do
-  id = params[:id]
-  word = params[:word]
-  @list = load_list(id)
-  redirect_unless_owner_or_editor("/vocab/#{id}/#{word}", @list)
-  new_translation = params[:new_translation]
-  reroute("/vocab/#{id}/#{word}", 'You must provide a translation') if new_translation.empty?
-
-  @word_object = word_from_list(word, @list)
-  modify_list(@list) do |list|
-    @word_object.translation = new_translation if list_owner?(@list)
-    @word_object.provisional_translation = new_translation if list_editor?(@list)
-  end
-
-  message = 'Translation added' if list_owner?(@list)
-  message = 'Translation provisionally added' if list_editor?(@list)
-
-  reroute("/vocab/#{id}/#{word}", message)
 end
 
 # route to delete a word from the list

@@ -13,6 +13,13 @@
   translation: run
   form_queue: []
   provisional_translation: run
+- !ruby/object:Word
+  word: caminar
+  type: verb
+  forms: []
+  translation: ходить
+  form_queue: []
+  provisional_translation: ''
 :name: test
 :owner: jimbo
 :editors:

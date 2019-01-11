@@ -18,21 +18,18 @@
     - :third_person
     - :singular
     - :plural
-  translation: ''
-  form_queue:
-  - !ruby/object:Form
-    form: running
-    markers:
-    - :neuter
+  translation: бегать
+  form_queue: []
+  provisional_translation: ''
 - !ruby/object:Word
-  word: walk
-  type: verb
+  word: hamburger
+  type: noun
   forms: []
   translation: ''
   form_queue: []
 - !ruby/object:Word
-  word: hamburger
-  type: noun
+  word: walk
+  type: verb
   forms: []
   translation: ''
   form_queue: []
