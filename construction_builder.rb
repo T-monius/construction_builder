@@ -450,6 +450,10 @@ post '/vocab/:id/add_word' do
     status 422
     erb :vocab_list
   end
+
+  # Replace with word_object = `new_or_queued_word`
+  # If word objects compared to one another, this wouldn't be
+  # necessary...
   if already_in_new_word_queue?(@list, word)
     word_object = @list[:new_word_queue].find do |word_object|
       word_object.to_s == word
@@ -555,19 +559,31 @@ def retrieve_word_from_list(word, list)
   end
 end
 
+def form_already_queued?(pending_form, word)
+  word.form_queue.any? { |form| form.to_s == pending_form }
+end
+
 # route to add a new word form
 post '/vocab/:id/:word/add_word_form' do
   id = params[:id]
-  word = params[:word]
   list = load_list(id)
+  word = retrieve_word_from_list(params[:word], list)
+  pending_form = params[:word_form]
   redirect_unless_owner_or_editor("/vocab/#{id}/#{word}", list)
 
-  markers = array_of_markers(params[:markers])
-  form = Form.new(params[:word_form], markers)
+  if form_already_queued?(pending_form, word)
+    form = word.form_queue.find do |form|
+      form.to_s == pending_form
+    end
+  else
+    markers = array_of_markers(params[:markers])
+    form = Form.new(pending_form, markers)
+  end
 
   modify_list(list) do |list|
-    retrieve_word_from_list(word, list).forms << form if list_owner?(list)
-    retrieve_word_from_list(word, list).form_queue << form if list_editor?(list)
+    word.forms << form if list_owner?(list)
+    word.form_queue.delete(form) if list_owner?(list)
+    word.form_queue << form if list_editor?(list)
   end
 
   session[:message] = 'New word form has been added' if list_owner?(list)
@@ -575,24 +591,34 @@ post '/vocab/:id/:word/add_word_form' do
   redirect "/vocab/#{id}/#{word}"
 end
 
-# route to delete a word form
+# Delete a word form or dequeue it
 post '/vocab/:id/:word/delete_word_form/:form' do
   id = params[:id]
-  word = params[:word]
   word_form = params[:form]
   list = load_list(id)
-  redirect_unless_owner("/vocab/#{id}/#{word}", list)
+  word_object = retrieve_word_from_list(params[:word], list)
+  redirect_unless_owner("/vocab/#{id}/#{word_object}", list)
 
-  modify_list(list) do |list|
-    word_object = retrieve_word_from_list(word, list)
+  # This is ugly, and a refactoring could be separating to
+  # two routes
+  if params[:dequeue_word_form]
+    modify_list(list) do |list|
+      form = word_object.form_queue.find do |form|
+        form.to_s == word_form
+      end
 
-    form = word_object.forms.find do |form|
-      form.to_s == word_form
+      word_object.form_queue.delete(form)
     end
+  else
+    modify_list(list) do |list|
+      form = word_object.forms.find do |form|
+        form.to_s == word_form
+      end
 
-    word_object.forms.delete(form)
+      word_object.forms.delete(form)
+    end
   end
 
   session[:message] = "The form #{word_form} was deleted"
-  redirect "/vocab/#{id}/#{word}"
+  redirect "/vocab/#{id}/#{word_object}"
 end

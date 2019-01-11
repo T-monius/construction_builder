@@ -4,14 +4,14 @@
 - !ruby/object:Word
   word: correr
   type: verb
-  forms: []
-  translation: run
-  form_queue:
+  forms:
   - !ruby/object:Form
     form: corra
     markers:
     - :imperative
     - :second_person
+  translation: run
+  form_queue: []
   provisional_translation: run
 :name: test
 :owner: jimbo
