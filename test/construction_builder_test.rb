@@ -395,4 +395,103 @@ class ConstructionBuilderTest < Minitest::Test
       word_object.to_s == 'hamburger'
     end
   end
+
+  def test_confriming_a_provisional_translation
+    create_sample_list_and_user_file
+
+    post 'vocab/001/hamburger/confirm_translation',
+         {confirm_translation: 'гамбургер'},
+         owner_session
+    assert_equal 302, last_response.status
+    assert_equal 'Translation added', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'Translation added'
+  end
+
+  def test_confirming_a_queued_word
+    create_sample_list_and_user_file
+
+    post '/vocab/001/add_word', { word: 'crawl' }, owner_session
+    assert_equal 302, last_response.status
+    assert_equal 'Word crawl was added', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'crawl'
+  end
+
+  def test_confirming_a_new_word_form
+    create_sample_list_and_user_file
+
+    post '/vocab/001/walk/add_word_form', { word_form: 'walks' }, owner_session
+    assert_equal 302, last_response.status
+    assert_equal 'New word form has been added', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, 'walks'
+  end
+
+  def test_dequeue_new_word_form
+    create_sample_list_and_user_file
+
+    post '/vocab/001/walk/delete_word_form/walks', {}, owner_session
+    assert_equal 302, last_response.status
+    assert_equal session[:message], 'The form walks was deleted'
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    refute_includes last_response.body, 'Forms of the word'
+  end
+
+  def test_confirming_deletion
+    create_sample_list_and_user_file
+
+    post '/vocab/001/hamburger/delete', {}, owner_session
+    assert_equal 302, last_response.status
+    assert_equal "The word 'hamburger' was deleted.", session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(Add Editor</a>)
+  end
+
+  def test_dequeueing_a_new_word
+    create_sample_list_and_user_file
+
+    post '/vocab/001/crawl/dequeue_word/new_word_queue', {}, owner_session
+    assert_equal 302, last_response.status
+    assert_equal "The word 'crawl' no longer queued for addition.", session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(<p>None</p>)
+  end
+
+  def test_reject_a_provisional_translation
+    create_sample_list_and_user_file
+
+    post '/vocab/001/hamburger/clear_provisional_translation', {}, owner_session
+    assert_equal 302, last_response.status
+    assert_equal 'Provisional Translation removed', session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    refute_includes last_response.body, 'Editor suggested translation'
+  end
+
+  def test_keep_a_word_and_deny_deletion_request
+    create_sample_list_and_user_file
+
+    post '/vocab/001/hamburger/dequeue_word/delete_queue', {}, owner_session
+    assert_equal 302, last_response.status
+    assert_equal "The word 'hamburger' no longer queued for deletion.",
+                 session[:message]
+
+    get last_response['Location']
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, %q(hamburger"</a>)
+  end
 end

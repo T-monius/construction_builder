@@ -21,21 +21,34 @@
   translation: бегать
   form_queue: []
   provisional_translation: ''
-- !ruby/object:Word
+- &1 !ruby/object:Word
   word: hamburger
   type: noun
   forms: []
   translation: ''
   form_queue: []
+  provisional_translation: гамбургер
 - !ruby/object:Word
   word: walk
   type: verb
   forms: []
   translation: ''
-  form_queue: []
+  form_queue:
+  - !ruby/object:Form
+    form: walks
+    markers:
+    - :third_person
+    - :singular
 :name: sample
 :owner: owner
 :editors:
 - editor
-:delete_queue: []
-:new_word_queue: []
+:delete_queue:
+- *1
+:new_word_queue:
+- !ruby/object:Word
+  word: crawl
+  type: verb
+  forms: []
+  translation: ''
+  form_queue: []

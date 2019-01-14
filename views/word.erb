@@ -37,16 +37,20 @@
 </form>
 
 <% if list_owner?(@list) %>
-  <h2>Editor suggested translation</h2>
   <!-- Add Editor's suggestion -->
-  <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/confirm_translation">
-    <input type="text" name="confirm_translation" value="<%= @word_object.provisional_translation %>">
-    <button type="submit">Add Translation</button>
-  </form>
-  <!-- Delete Editor's Suggestion -->
-  <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/clear_provisional_translation">
-    <button type="submit">Reject Translation</button>
-  </form>
+  <% if @word_object.provisional_translation && !@word_object.provisional_translation.empty? %>
+    <h2>Editor suggested translation</h2>
+    <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/confirm_translation">
+      <input type="text" name="confirm_translation" value="<%= @word_object.provisional_translation %>">
+      <button type="submit">Add Translation</button>
+    </form>
+    <!-- Delete Editor's Suggestion -->
+    <form method="post" action="/vocab/<%= @list[:id] %>/<%= word %>/clear_provisional_translation">
+      <button type="submit">Reject Translation</button>
+    </form>
+  <% else %>
+    <p>None</p>
+  <% end %>
 <% end %>
 
 <p><a href="/vocab/<%= @list[:id] %>/<%= word %>/add_word_form">Add a new form of the word</a></p>
