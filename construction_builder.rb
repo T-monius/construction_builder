@@ -4,6 +4,7 @@ require 'sinatra'
 require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
+require 'redcarpet'
 require 'bcrypt'
 # require 'pry'
 
@@ -102,6 +103,11 @@ end
 
 def main_env_config_path
   File.expand_path("../config", __FILE__)
+end
+
+def render_markdown(md_file)
+  markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
+  markdown.render(md_file)
 end
 
 def load_vocab_lists
@@ -329,6 +335,12 @@ get '/' do
   end
 
   erb :index
+end
+
+get '/about' do
+  filepath = File.expand_path('..', __FILE__)
+  about_path = File.join(filepath, 'README.md')
+  render_markdown(File.read(about_path))
 end
 
 get '/new_user' do
@@ -655,4 +667,10 @@ post '/vocab/:id/:word/delete_word_form/:form' do
 
   session[:message] = "The form #{word_form} was deleted"
   redirect "/vocab/#{id}/#{word_object}"
+end
+
+not_found do
+  path = request.path
+  session[:message] = "Action does not exist."
+  redirect '/'
 end

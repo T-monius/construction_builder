@@ -4,7 +4,7 @@
 
 The 'Construction Builder' app is based on the idea that a fast way to become fluent when learning a language is by mastering a plethora of constructions. A construction is essentially a fill in the blank sentence (i.e. 'The ____ is on the ____.'). By swapping out the blanks with as much of your known vocabulary in the language as possible, you become familiar not only with the words themselves but quickly form useful sentences with them. You not only remember words, but you know when and how to use them.
 
-There are many beautiful languages in the world for which there is little or inadequate material for learning. This is meant to be a language agnostic tool. Equipped with this tool and an editor who speaks the language well or natively, a learner can build there own material. the process itself will help acquisition of the language...
+There are many beautiful languages in the world for which there is little or inadequate material for learning. This is meant to be a language agnostic tool. Equipped with this tool and an editor who speaks the language well or natively, a learner can build their own material. the process itself will help acquisition of the language...
 
 ## The Setup
 
