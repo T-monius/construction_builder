@@ -20,6 +20,18 @@
   translation: ходить
   form_queue: []
   provisional_translation: ''
+- !ruby/object:Word
+  word: gatear
+  type: verb
+  forms: []
+  translation: ''
+  form_queue: []
+- !ruby/object:Word
+  word: locomoverse
+  type: verb
+  forms: []
+  translation: ''
+  form_queue: []
 :name: test
 :owner: jimbo
 :editors:

@@ -8,10 +8,11 @@ require 'bcrypt'
 # require 'pry'
 
 APPROVED_MARKERS = [:first_person, :second_person, :third_person,
-           :plural, :singular, :neuter, :masculine,
-           :feminine, :genetive, :imperative, :dative,
-           :instrumenal, :accusative, :nominative, :prepositional,
-           :vocative, :dictionary, :formal, :informal]
+                    :plural, :singular, :neuter, :masculine,
+                    :feminine, :genetive, :imperative, :dative,
+                    :instrumenal, :accusative, :nominative, :prepositional,
+                    :vocative, :dictionary, :formal, :informal, :past_tense,
+                    :future_tense, :conditional, :present_tense]
 
 class Word
   attr_accessor :word, :type, :forms, :translation,
@@ -279,8 +280,41 @@ def add_list(username, list_name)
   end  
 end
 
+def already_in_new_word_queue?(list, word)
+  list[:new_word_queue].any? do |word_object|
+    word.to_s == word
+  end
+end
+
+# This wouldn't be necessary if `Word` objects compared to one another
+def new_or_queued_word(list, word)
+  if already_in_new_word_queue?(list, word)
+    word_object = list[:new_word_queue].find do |word_object|
+      word_object.to_s == word
+    end
+  else
+    word_object = Word.new(word, params[:word_type])
+  end
+end
+
 def unique_word?(list, word)
   list[:vocab].any? { |word_object| word_object.word == word }
+end
+
+def array_of_markers(markers_string)
+  markers_string.scan(/[\w_]+/).map(&:to_sym).select do |marker|
+    APPROVED_MARKERS.include?(marker)
+  end
+end
+
+def retrieve_word_from_list(word, list)
+  list[:vocab].find do |word_object|
+    word_object.word == word
+  end
+end
+
+def form_already_queued?(pending_form, word)
+  word.form_queue.any? { |form| form.to_s == pending_form }
 end
 
 # route to view the index/ available lists
@@ -486,12 +520,6 @@ get '/vocab/:id/add_word' do
   erb :new_word
 end
 
-def already_in_new_word_queue?(list, word)
-  list[:new_word_queue].any? do |word_object|
-    word.to_s == word
-  end
-end
-
 # route to add a word to the list
 post '/vocab/:id/add_word' do
   id = params[:id]
@@ -504,16 +532,7 @@ post '/vocab/:id/add_word' do
     erb :vocab_list
   end
 
-  # Replace with word_object = `new_or_queued_word`
-  # If word objects compared to one another, this wouldn't be
-  # necessary...
-  if already_in_new_word_queue?(@list, word)
-    word_object = @list[:new_word_queue].find do |word_object|
-      word_object.to_s == word
-    end
-  else
-    word_object = Word.new(word, params[:word_type])
-  end
+  word_object = new_or_queued_word(@list, word)
 
   modify_list(@list) do |list|
     list[:vocab] << word_object if list_owner?(@list)
@@ -576,22 +595,6 @@ get '/vocab/:id/:word/add_word_form' do
   @word = params[:word]
 
   erb :add_word_form
-end
-
-def array_of_markers(markers_string)
-  markers_string.scan(/[\w_]+/).map(&:to_sym).select do |marker|
-    APPROVED_MARKERS.include?(marker)
-  end
-end
-
-def retrieve_word_from_list(word, list)
-  list[:vocab].find do |word_object|
-    word_object.word == word
-  end
-end
-
-def form_already_queued?(pending_form, word)
-  word.form_queue.any? { |form| form.to_s == pending_form }
 end
 
 # route to add a new word form
